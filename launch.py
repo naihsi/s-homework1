@@ -29,11 +29,14 @@ def main():
     _url = git_url
     _branches = ngit.get_branch_info(_url)
 
-    if _branch_name in _branches:
-        if s_cmd.pass_dryrun(s_cmd.create_inst, (_branch_name, True)):
-            _inst_id = s_cmd.create_inst(_branch_name)
-            s_cmd.wait_for("running", _inst_id)
-            print("[INFO] {} was launched for branch {}".format(_inst_id, _branch_name))
+    if _branch_name not in _branches:
+        print("[INFO] branch {} not in the git".format(_branch_name))
+        return
+
+    if s_cmd.pass_dryrun(s_cmd.create_inst, (_branch_name, True)):
+        _inst_id = s_cmd.create_inst(_branch_name)
+        s_cmd.wait_for("running", _inst_id)
+        print("[INFO] {} was launched for branch {}".format(_inst_id, _branch_name))
 
 
 if __name__ == "__main__":
