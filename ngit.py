@@ -12,7 +12,7 @@ def get_branch_info(url):
         repo = Repo.init(dname)
         repo.create_remote("origin", _git)
         repo.git.fetch()
-        remote_branches = []
+        remote_branches = {}
         for row in repo.git.branch('-r').splitlines():
             _branch_name = row.strip().replace("origin/", "")
             _last = last_commit(repo, _branch_name)
@@ -20,7 +20,7 @@ def get_branch_info(url):
                 "branchname": _branch_name,
                 "lastcommid": _last,
             }
-            remote_branches.append(_tmp)
+            remote_branches[_branch_name] = _last
         return remote_branches
 
 
