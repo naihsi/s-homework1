@@ -39,15 +39,26 @@ def query_state(inst_id):
     return _state
 
 
-def terminate_inst(inst_id):
+def wait_for(state, inst_id):
+    while(True):
+        _state = query_state(inst_id)
+        if _state == state:
+            print("got {}".format(state))
+            break
+
+        print("waiting for {} (now is {})".format(state, _state))
+        time.sleep(5)
+
+
+def terminate_inst(inst_id, dryrun=False):
     _ids = [
         inst_id,
     ]
-    _res = ec2_cli().terminate_instances(InstanceIds=_ids)
+    _res = ec2_cli().terminate_instances(InstanceIds=_ids, DryRun=dryrun)
     pprint(_res)
 
 
-def create_inst(branch_name):
+def create_inst(branch_name, dryrun=False):
     _block = [
         {
             'DeviceName': '/dev/xvda',
@@ -97,7 +108,8 @@ def create_inst(branch_name):
         Monitoring=_monitoring,
         SubnetId=_subnet,
         SecurityGroupIds=_sgids,
-        TagSpecifications=_tags
+        TagSpecifications=_tags,
+        DryRun=dryrun
     )
 
     _inst_id = _res["Instances"][0]["InstanceId"]
@@ -110,21 +122,43 @@ def create_inst(branch_name):
 
 # #### ##### ##### #####
 
+def pass_dryrun(func, params):
+    try:
+        func(*params)
+    except Exception as e:
+        _msg = str(e)
+        if "Request would have succeeded, but DryRun flag is set." in _msg:
+            return True
+        else:
+            return False
+
 
 def test():
     print("init")
 #    list_inst()
-#    _branch_name = "feature1"
-#    _inst_id = create_inst(_branch_name)
-#    print("new inatnce: {} (branch: {})".format(_inst_id, _branch_name))
+#    _inst_id = "i-0d9203c6d734e76c7"
+    _branch_name = "feature1"
 
-#    time.sleep(5)
+    # dryrun a function
+    _res = pass_dryrun(create_inst, (_branch_name, True))
+    print("dryrun passed: {}".format(_res))
 
-#    _inst_id = "i-0a4236bbd85ff30d9"
-#    terminate_inst(_inst_id)
-    _inst_id = "i-000a8e64eda4f4df6"
+    # create an instance
+    _inst_id = create_inst(_branch_name)
+    print("new inatnce: {} (branch: {})".format(_inst_id, _branch_name))
+
+    # query instance
     _state = query_state(_inst_id)
     print("state: {}".format(_state))
+
+    # query an instance until it reached a state
+    wait_for("running", _inst_id)
+
+    # terminate an instance
+#    _inst_id = "i-0a4236bbd85ff30d9"
+    terminate_inst(_inst_id)
+    wait_for("terminated", _inst_id)
+#    _inst_id = "i-000a8e64eda4f4df6"
 
 
 if __name__ == "__main__":
