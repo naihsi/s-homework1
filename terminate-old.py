@@ -46,25 +46,30 @@ def main():
     # 1. fetch information from git
     _url = git_url
     _branches = ngit.get_branch_info(_url)
-    print(_branches)
+#    print(_branches)
 
     # 2. get the instances to check
     _data = fetch_instances()
-    pprint(_data)
+#    pprint(_data)
 
     # 3. terminate the old(3 days) instances
     _now = datetime.now(timezone.utc)
     print("utcnow: {}".format(_now))
-    print("now: {}".format(datetime.now()))
+#    print("now: {}".format(datetime.now()))
     for row in _data:
         _branch = _branches[row["branch"]]
         _seconds_diff = (_now - _branch["datetime"]).total_seconds()
-        print("{} - {} = {}".format(_now, _branch["datetime"], _seconds_diff))
+        #print("{} - {} = {}".format(_now, _branch["datetime"], _seconds_diff))\
+        
+        if row["state"] == "terminated":
+            print("[INFO] {} skipped: already terminated".format(row["InstanceId"]))
+            continue
 
         if _seconds_diff > terminate_seconds:
-            s_cmd.terminate_inst(row["InstanceId"])
-            s_cmd.wait_for("terminated", row["InstanceId"])
-            print("[INFO] {} terminated due to: last commit {} is older than {} seconds in branch {}".format(row["InstanceId"], _branch["hash"], _seconds_diff, row["branch"]))
+            if s_cmd.pass_dryrun(s_cmd.terminate_inst, (row["InstanceId"], True)):
+                s_cmd.terminate_inst(row["InstanceId"])
+                s_cmd.wait_for("terminated", row["InstanceId"])
+                print("[INFO] {} terminated: last commit {} is older than {} seconds in branch {}".format(row["InstanceId"], _branch["hash"], _seconds_diff, row["branch"]))
 
 
 if __name__ == "__main__":
