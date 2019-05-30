@@ -28,7 +28,7 @@ def last_commit(repo, branch_name):
     _logs = repo.git.log("origin/{}".format(branch_name)).splitlines()
     if len(_logs) < 3:
         return {}
-    
+
     _last = {
         "hash": _logs[0][7:],
         # Wed MAy 29 22:08:45 2019 +0000
