@@ -14,11 +14,24 @@ def ec2_cli():
 # #### ##### ##### #####
 
 
-def list_inst():
-    _filters = []
-    _res = ec2_cli().describe_instances(Filters=_filters)
+def list_inst(filters):
+    _res = ec2_cli().describe_instances(Filters=filters)
+#    pprint(_res)
+    return _res
 
-    pprint(_res)
+
+def each_ec2_bytag(name, value):
+    _filters = [
+        {
+            "Name": "tag:{}".format(name),
+            "Values": [
+                value
+            ],
+        }
+    ]
+    _res = list_inst(_filters)
+    for row in _res["Reservations"]:
+        yield row["Instances"][0]
 
 
 def query_state(inst_id):
@@ -30,12 +43,9 @@ def query_state(inst_id):
             ],
         }
     ]
-    _res = ec2_cli().describe_instances(Filters=_filters)
-
-#    pprint(_res)
-
+    _res = list_inst(_filters)
     _state = _res["Reservations"][0]["Instances"][0]["State"]["Name"]
-#    print(_state)
+    print("> state: {}".format(_state))
     return _state
 
 
@@ -135,6 +145,14 @@ def pass_dryrun(func, params):
 
 def test():
     print("init")
+
+    _name = "role"
+    _value = "service"
+    for row in each_ec2_bytag(_name, _value):
+        pprint(row["InstanceId"])
+        pprint(row["State"]["Name"])
+        pprint(row["Tags"])
+
 #    list_inst()
 #    _inst_id = "i-0d9203c6d734e76c7"
     _branch_name = "feature1"
