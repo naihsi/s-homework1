@@ -1,3 +1,3 @@
 
-python3 s-cmd.py
+python3 s_cmd.py
 
