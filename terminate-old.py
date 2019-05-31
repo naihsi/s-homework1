@@ -8,6 +8,21 @@ from datetime import timezone
 # #### ##### ##### #####
 
 
+def info(msg):
+    print("[INFO] {}".format(msg))
+
+    
+def warn(msg):
+    print("[WARN] {}".format(msg))
+
+    
+def error(msg):
+    print("[ERROR] {}".format(msg))
+
+    
+# #### ##### ##### #####
+
+
 def fetch_instances():
     _data = []
     _name = "role"
@@ -57,19 +72,26 @@ def main():
     print("utcnow: {}".format(_now))
 #    print("now: {}".format(datetime.now()))
     for row in _data:
+        if row["branch"] not in _branches:
+            warn("{} skipped: not in the branch list".format(row["branch"]))
+            continue
+        
         _branch = _branches[row["branch"]]
         _seconds_diff = (_now - _branch["datetime"]).total_seconds()
         #print("{} - {} = {}".format(_now, _branch["datetime"], _seconds_diff))\
         
         if row["state"] == "terminated":
-            print("[INFO] {} skipped: already terminated".format(row["InstanceId"]))
+            info("{} skipped: already terminated".format(row["InstanceId"]))
             continue
 
-        if _seconds_diff > terminate_seconds:
-            if s_cmd.pass_dryrun(s_cmd.terminate_inst, (row["InstanceId"], True)):
-                s_cmd.terminate_inst(row["InstanceId"])
-                s_cmd.wait_for("terminated", row["InstanceId"])
-                print("[INFO] {} terminated: last commit {} is older than {} seconds in branch {}".format(row["InstanceId"], _branch["hash"], _seconds_diff, row["branch"]))
+        if _seconds_diff < terminate_seconds:
+            info("{} skipped: last commit {} ({} < {} seconds) in branch {}".format(row["InstanceId"], _branch["hash"], _seconds_diff, terminate_seconds, row["branch"]))
+            continue
+            
+        if s_cmd.pass_dryrun(s_cmd.terminate_inst, (row["InstanceId"], True)):
+            s_cmd.terminate_inst(row["InstanceId"])
+            s_cmd.wait_for("terminated", row["InstanceId"])
+            info("{} terminated: last commit {} ({} >= {}seconds) in branch {}".format(row["InstanceId"], _branch["hash"], _seconds_diff, terminate_seconds, row["branch"]))
 
 
 if __name__ == "__main__":
