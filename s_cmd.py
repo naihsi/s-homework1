@@ -5,6 +5,22 @@ import time
 
 # #### ##### ##### #####
 
+_debug = False
+
+
+def info(msg):
+    print("[INFO] {}".format(msg))
+
+
+def debug(msg):
+    if _debug:
+        print("[DEBUG] {}".format(msg))
+
+        
+def ddebug(msg):
+    if _debug:
+        pprint("[DEBUG] {}".format(msg))
+
 
 def ec2_cli():
     client = boto3.client('ec2', region_name='us-west-2')
@@ -16,7 +32,7 @@ def ec2_cli():
 
 def list_inst(filters):
     _res = ec2_cli().describe_instances(Filters=filters)
-#    pprint(_res)
+#    ddebug(_res)
     return _res
 
 
@@ -45,18 +61,19 @@ def query_state(inst_id):
     ]
     _res = list_inst(_filters)
     _state = _res["Reservations"][0]["Instances"][0]["State"]["Name"]
-    print("> state: {}".format(_state))
+    debug("> state: {}".format(_state))
     return _state
 
 
-def wait_for(state, inst_id):
+def wait_for(state, inst_id, verbose=True):
     while(True):
         _state = query_state(inst_id)
         if _state == state:
-            print("got {}".format(state))
+            debug("got {}".format(state))
             break
 
-        print("waiting for {} (now is {})".format(state, _state))
+        if verbose:
+            info("waiting for {} (now is {})".format(state, _state))
         time.sleep(5)
 
 
@@ -65,7 +82,7 @@ def terminate_inst(inst_id, dryrun=False):
         inst_id,
     ]
     _res = ec2_cli().terminate_instances(InstanceIds=_ids, DryRun=dryrun)
-    pprint(_res)
+    ddebug(_res)
 
 
 def create_inst(branch_name, dryrun=False):
@@ -124,8 +141,8 @@ def create_inst(branch_name, dryrun=False):
 
     _inst_id = _res["Instances"][0]["InstanceId"]
 
-    pprint(_res)
-    print("new inatnce: {}".format(_inst_id))
+    ddebug(_res)
+    debug("new inatnce: {}".format(_inst_id))
 
     return _inst_id
 
@@ -144,14 +161,15 @@ def pass_dryrun(func, params):
 
 
 def test():
-    print("init")
+    _debug = True
+    debug("init")
 
     _name = "role"
     _value = "service"
     for row in each_ec2_bytag(_name, _value):
-        pprint(row["InstanceId"])
-        pprint(row["State"]["Name"])
-        pprint(row["Tags"])
+        ddebug(row["InstanceId"])
+        ddebug(row["State"]["Name"])
+        ddebug(row["Tags"])
 
 #    list_inst()
 #    _inst_id = "i-0d9203c6d734e76c7"
@@ -159,15 +177,15 @@ def test():
 
     # dryrun a function
     _res = pass_dryrun(create_inst, (_branch_name, True))
-    print("dryrun passed: {}".format(_res))
+    debug("dryrun passed: {}".format(_res))
 
     # create an instance
     _inst_id = create_inst(_branch_name)
-    print("new inatnce: {} (branch: {})".format(_inst_id, _branch_name))
+    debug("new inatnce: {} (branch: {})".format(_inst_id, _branch_name))
 
     # query instance
     _state = query_state(_inst_id)
-    print("state: {}".format(_state))
+    debug("state: {}".format(_state))
 
     # query an instance until it reached a state
     wait_for("running", _inst_id)

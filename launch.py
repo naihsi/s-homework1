@@ -7,11 +7,15 @@ import argparse
 # #### ##### ##### #####
 
 
+def info(msg):
+    print("[INFO] {}".format(msg))
+
+
 def arg_parse():
     parser = argparse.ArgumentParser(description='deploy from branch')
     parser.add_argument('-b', metavar="master", help='branch name to deploy', required=True)
     args = parser.parse_args()
-    print(args)
+#    print(args)
     return args
 
 # #### ##### ##### #####
@@ -30,13 +34,13 @@ def main():
     _branches = ngit.get_branch_info(_url)
 
     if _branch_name not in _branches:
-        print("[INFO] branch {} not in the git".format(_branch_name))
+        info("[INFO] branch {} not in the git".format(_branch_name))
         return
 
     if s_cmd.pass_dryrun(s_cmd.create_inst, (_branch_name, True)):
         _inst_id = s_cmd.create_inst(_branch_name)
         s_cmd.wait_for("running", _inst_id)
-        print("[INFO] {} was launched for branch {}".format(_inst_id, _branch_name))
+        info("[INFO] {} was launched for branch {}".format(_inst_id, _branch_name))
 
 
 if __name__ == "__main__":
