@@ -55,7 +55,7 @@ def fetch_instances():
 def main():
 
     # init
-    terminate_seconds = 86400
+    terminate_seconds = 86400 * 3
     git_url = "https://github.com/naihsi/test-server.git"
 
     # 1. fetch information from git
